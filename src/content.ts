@@ -56,7 +56,6 @@ function readThemeFromPage(origin: string): {
     const theme = page.props?.theme
     if (!theme) return { logoUrl: null, primaryColor: null, fontFamily: null }
 
-    // Prefer white version for dark popup backgrounds
     const logoPath =
       theme.logos?.['shorthand_white'] ??
       theme.logos?.['shorthand-white'] ??
@@ -96,7 +95,6 @@ function sendInitFromMeta(): boolean {
       type: 'INNO_INIT',
       serverUrl: cfg.serverUrl,
       ablyKey: cfg.ablyKey,
-      // meta tag logoUrl (bootstrap.ts white SVG) wins; theme logos as fallback
       logoUrl: cfg.logoUrl ?? theme.logoUrl,
       primaryColor: theme.primaryColor,
       fontFamily: theme.fontFamily,
@@ -107,7 +105,34 @@ function sendInitFromMeta(): boolean {
   }
 }
 
+// Track the last known chat so we can re-subscribe after a SW restart
+let lastKnownChatId: number | null = null
+
+function resubscribeIfNeeded(): void {
+  if (lastKnownChatId != null) {
+    setTimeout(() => {
+      chrome.runtime.sendMessage({ type: 'INNO_SUBSCRIBE', chatId: lastKnownChatId! }).catch(() => {})
+    }, 2500)
+  }
+}
+
+// Initial connection
 sendInitFromMeta()
+
+// Heartbeat: Chrome MV3 service workers are killed after ~30s of inactivity.
+// Every 20s check if the SW still has a live connection; reinitialize if not.
+setInterval(async () => {
+  try {
+    const status = await chrome.runtime.sendMessage({ type: 'INNO_STATUS' })
+    if (!status?.serverUrl) {
+      // SW was killed and lost in-memory state — reinitialize
+      if (sendInitFromMeta()) resubscribeIfNeeded()
+    }
+  } catch {
+    // SW not running at all — sending a message will wake it, INNO_INIT reconnects
+    if (sendInitFromMeta()) resubscribeIfNeeded()
+  }
+}, 20_000)
 
 window.addEventListener('message', (event) => {
   if (event.source !== window || typeof event.data?.type !== 'string') return
@@ -125,6 +150,7 @@ window.addEventListener('message', (event) => {
   }
 
   if (event.data.type === 'INNO_SCOOP_CHAT') {
-    chrome.runtime.sendMessage({ type: 'INNO_SUBSCRIBE', chatId: event.data.chatId as number })
+    lastKnownChatId = event.data.chatId as number
+    chrome.runtime.sendMessage({ type: 'INNO_SUBSCRIBE', chatId: lastKnownChatId })
   }
 })
