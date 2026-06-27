@@ -50,6 +50,17 @@ function buildPusher(config: Config): Pusher {
   })
 }
 
+function connect(config: Config, tabId: number): void {
+  if (pusher && cfg?.serverUrl === config.serverUrl && cfg?.ablyKey === config.ablyKey) return
+
+  cfg = config
+  activeTabId = tabId
+
+  if (pusher) pusher.disconnect()
+  pusher = buildPusher(cfg)
+  void chrome.storage.local.set(cfg)
+}
+
 function subscribeToChat(chatId: number): void {
   if (!pusher || !cfg) return
 
@@ -98,11 +109,8 @@ async function relayResult(commandId: string, result: unknown): Promise<void> {
   })
 }
 
-// Runs inside the page context — no closure access
 function executeInPage(cmd: BrowserCommand): unknown {
-  if (cmd.type === 'snapshot') {
-    return captureSnapshot()
-  }
+  if (cmd.type === 'snapshot') return captureSnapshot()
 
   const el = cmd.selector ? (document.querySelector(cmd.selector) as HTMLElement | null) : null
 
@@ -131,7 +139,7 @@ function executeInPage(cmd: BrowserCommand): unknown {
     return { ok: true }
   }
 
-  return { error: `Unknown command type: ${cmd.type}` }
+  return { error: `Unknown command: ${cmd.type}` }
 
   function captureSnapshot(): string {
     const lines: string[] = [`url: ${location.href}`, `title: ${document.title}`, '']
@@ -172,20 +180,26 @@ function executeInPage(cmd: BrowserCommand): unknown {
   }
 }
 
-chrome.runtime.onMessage.addListener((msg, _sender, reply) => {
-  void handleMessage(msg, reply)
+chrome.runtime.onMessage.addListener((msg, sender, reply) => {
+  void handleMessage(msg, sender, reply)
   return true
 })
 
-async function handleMessage(msg: Record<string, unknown>, reply: (r: unknown) => void): Promise<void> {
+async function handleMessage(
+  msg: Record<string, unknown>,
+  sender: chrome.runtime.MessageSender,
+  reply: (r: unknown) => void,
+): Promise<void> {
   switch (msg.type) {
-    case 'INNO_CONNECT': {
-      cfg = { serverUrl: msg.serverUrl as string, ablyKey: msg.ablyKey as string }
-      activeTabId = msg.tabId as number
-      await chrome.storage.local.set(cfg)
-      pusher = buildPusher(cfg)
-      pusher.connection.bind('connected', () => reply({ ok: true, state: 'connected' }))
-      pusher.connection.bind('failed', () => reply({ ok: false, state: 'failed' }))
+    case 'INNO_INIT': {
+      // Auto-triggered when the Innovation Platform page loads
+      const tabId = sender.tab?.id
+      if (tabId == null) break
+      connect(
+        { serverUrl: msg.serverUrl as string, ablyKey: msg.ablyKey as string },
+        tabId,
+      )
+      reply({ ok: true })
       break
     }
     case 'INNO_SUBSCRIBE': {
@@ -195,7 +209,11 @@ async function handleMessage(msg: Record<string, unknown>, reply: (r: unknown) =
       break
     }
     case 'INNO_STATUS': {
-      reply({ state: pusher?.connection.state ?? 'disconnected', chatId: activeChatId, serverUrl: cfg?.serverUrl })
+      reply({
+        state: pusher?.connection.state ?? 'disconnected',
+        chatId: activeChatId,
+        serverUrl: cfg?.serverUrl,
+      })
       break
     }
     case 'INNO_DISCONNECT': {
@@ -203,6 +221,8 @@ async function handleMessage(msg: Record<string, unknown>, reply: (r: unknown) =
       pusher = null
       activeChannel = null
       activeChatId = null
+      cfg = null
+      await chrome.storage.local.clear()
       reply({ ok: true })
       break
     }

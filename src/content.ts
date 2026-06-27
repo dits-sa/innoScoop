@@ -1,4 +1,3 @@
-// Relay Ably channel auth from background worker through the page (same-origin, no CORS)
 chrome.runtime.onMessage.addListener((msg, _sender, reply) => {
   if (msg.type === 'INNO_AUTH') {
     const csrf = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? ''
@@ -38,12 +37,19 @@ chrome.runtime.onMessage.addListener((msg, _sender, reply) => {
   }
 })
 
-// Listen for messages from the Innovation Platform page
-// The main app calls: window.postMessage({ type: 'INNO_SCOOP_CHAT', chatId: 42 }, '*')
 window.addEventListener('message', (event) => {
   if (event.source !== window || typeof event.data?.type !== 'string') return
-  if (!event.data.type.startsWith('INNO_SCOOP_')) return
 
+  // Auto-configure from the Innovation Platform page
+  if (event.data.type === 'INNO_SCOOP_INIT') {
+    chrome.runtime.sendMessage({
+      type: 'INNO_INIT',
+      serverUrl: event.data.serverUrl as string,
+      ablyKey: event.data.ablyKey as string,
+    })
+  }
+
+  // New chat session started
   if (event.data.type === 'INNO_SCOOP_CHAT') {
     chrome.runtime.sendMessage({ type: 'INNO_SUBSCRIBE', chatId: event.data.chatId as number })
   }
