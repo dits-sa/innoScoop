@@ -115,19 +115,111 @@ async function relayResult(key: string, action: string, result: unknown): Promis
   })
 }
 
-function executeInPage(cmd: BrowserCommand): unknown {
+async function executeInPage(cmd: BrowserCommand): Promise<unknown> {
+  // ── Visual overlay & animated cursor ──────────────────────────────────────
+  const S_ID = 'inno-scoop-style'
+  const O_ID = 'inno-scoop-overlay'
+  const C_ID = 'inno-scoop-cursor'
+
+  function ensureUI(): void {
+    if (document.getElementById(S_ID)) return
+
+    const style = document.createElement('style')
+    style.id = S_ID
+    style.textContent = `
+      #${O_ID} {
+        position:fixed;inset:0;pointer-events:none;z-index:2147483645;
+        animation:innoGlow 1.4s ease-in-out infinite;
+      }
+      @keyframes innoGlow {
+        0%,100%{box-shadow:inset 0 0 0 2px rgba(139,132,215,.5),inset 0 0 24px rgba(139,132,215,.04);}
+        50%{box-shadow:inset 0 0 0 3px rgba(139,132,215,1),inset 0 0 56px rgba(139,132,215,.18);}
+      }
+      #${C_ID} {
+        position:fixed;pointer-events:none;z-index:2147483647;
+        width:22px;height:22px;left:50%;top:30%;
+        transition:left .45s cubic-bezier(.4,0,.2,1),top .45s cubic-bezier(.4,0,.2,1);
+        filter:drop-shadow(0 0 5px #8b84d7) drop-shadow(0 1px 2px rgba(0,0,0,.4));
+      }
+      #${C_ID}.inno-click{animation:innoClick .22s ease-out;}
+      @keyframes innoClick{0%{transform:scale(1)}45%{transform:scale(.6)}100%{transform:scale(1)}}
+      #${C_ID}.inno-type::after{
+        content:'';position:absolute;bottom:-5px;left:3px;
+        width:10px;height:2px;background:#8b84d7;border-radius:1px;
+        animation:innoBlink .65s steps(1) infinite;
+      }
+      @keyframes innoBlink{0%,100%{opacity:1}50%{opacity:0}}
+    `
+    document.head.appendChild(style)
+
+    const ov = document.createElement('div')
+    ov.id = O_ID
+    document.body.appendChild(ov)
+
+    const cur = document.createElement('div')
+    cur.id = C_ID
+    cur.innerHTML = `<svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M3.5 3.5L18.5 11L11 13L7.5 18.5L3.5 3.5Z" fill="#8b84d7" stroke="white" stroke-width="1.3" stroke-linejoin="round"/>
+    </svg>`
+    document.body.appendChild(cur)
+  }
+
+  function wait(ms: number): Promise<void> { return new Promise(r => setTimeout(r, ms)) }
+
+  function moveTo(x: number, y: number): Promise<void> {
+    const c = document.getElementById(C_ID)
+    if (c) { c.style.left = `${x}px`; c.style.top = `${y}px` }
+    return wait(480)
+  }
+
+  async function animateClick(): Promise<void> {
+    const c = document.getElementById(C_ID)
+    if (!c) return
+    c.classList.remove('inno-click', 'inno-type')
+    void c.offsetWidth
+    c.classList.add('inno-click')
+    await wait(240)
+  }
+
+  function animateType(): void {
+    const c = document.getElementById(C_ID)
+    if (!c) return
+    c.classList.remove('inno-click', 'inno-type')
+    c.classList.add('inno-type')
+  }
+
+  function scheduleRemoval(): void {
+    clearTimeout((window as any).__innoCleanup)
+    ;(window as any).__innoCleanup = setTimeout(() => {
+      document.getElementById(O_ID)?.remove()
+      document.getElementById(C_ID)?.remove()
+      document.getElementById(S_ID)?.remove()
+    }, 5000)
+  }
+  // ── End UI setup ─────────────────────────────────────────────────────────
+
+  ensureUI()
+  scheduleRemoval()
+
   if (cmd.action === 'snapshot') return captureSnapshot()
 
   const el = cmd.selector ? (document.querySelector(cmd.selector) as HTMLElement | null) : null
 
+  if (el) {
+    const r = el.getBoundingClientRect()
+    await moveTo(r.left + r.width / 2, r.top + r.height / 2)
+  }
+
   if (cmd.action === 'click') {
     if (!el) return { error: `Not found: ${cmd.selector}` }
+    await animateClick()
     el.click()
     return { ok: true }
   }
 
   if (cmd.action === 'fill' && cmd.value !== undefined) {
     if (!el) return { error: `Not found: ${cmd.selector}` }
+    animateType()
     const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set
     setter?.call(el, cmd.value)
     el.dispatchEvent(new Event('input', { bubbles: true }))
@@ -155,18 +247,15 @@ function executeInPage(cmd: BrowserCommand): unknown {
     function walk(node: Element, depth: number): void {
       const tag = node.tagName.toLowerCase()
       if (['script', 'style', 'svg', 'head', 'noscript'].includes(tag)) return
-
       const interactive =
         ['a', 'button', 'input', 'select', 'textarea'].includes(tag) || node.hasAttribute('role')
-
       if (interactive) {
         const role = node.getAttribute('role') ?? tag
         const label =
           node.getAttribute('aria-label') ??
           node.getAttribute('placeholder') ??
           node.getAttribute('title') ??
-          node.textContent?.trim().slice(0, 100) ??
-          ''
+          node.textContent?.trim().slice(0, 100) ?? ''
         const parts: string[] = [`${'  '.repeat(depth)}[${role}]`]
         if (node.id) parts.push(`#${node.id}`)
         const name = node.getAttribute('name')
@@ -180,7 +269,6 @@ function executeInPage(cmd: BrowserCommand): unknown {
         if (label) parts.push(`"${label}"`)
         lines.push(parts.join(' '))
       }
-
       for (const child of node.children) walk(child, depth + (interactive ? 1 : 0))
     }
   }
