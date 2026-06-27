@@ -5,9 +5,18 @@ export default defineConfig({
   plugins: [
     webExtension({
       manifest: './manifest.json',
+      webExtConfig: {
+        browser: 'chrome',
+      },
     }),
   ],
   build: {
     minify: false,
+    rollupOptions: {
+      output: {
+        format: 'iife',
+        inlineDynamicImports: true,
+      },
+    },
   },
 })
