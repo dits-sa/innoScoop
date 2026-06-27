@@ -9,8 +9,8 @@ type Config = {
 }
 
 type BrowserCommand = {
-  command_id: string
-  type: 'snapshot' | 'click' | 'fill' | 'navigate' | 'read' | 'scroll'
+  key: string
+  action: 'snapshot' | 'click' | 'fill' | 'navigate' | 'read' | 'scroll'
   selector?: string
   value?: string
   url?: string
@@ -81,7 +81,7 @@ function subscribeToChat(chatId: number): void {
   activeChannel.bind('AiChatEvent', async (data: AiChatEvent) => {
     if (data.type !== 'browser_command') return
     const result = await runCommand(data)
-    await relayResult(data.command_id, result)
+    await relayResult(data.key, data.action, result)
   })
 }
 
@@ -105,28 +105,28 @@ async function runCommand(cmd: BrowserCommand): Promise<unknown> {
   }
 }
 
-async function relayResult(commandId: string, result: unknown): Promise<void> {
+async function relayResult(key: string, action: string, result: unknown): Promise<void> {
   if (!cfg || activeChatId == null || activeTabId == null) return
 
   chrome.tabs.sendMessage(activeTabId, {
     type: 'INNO_POST',
     url: `${cfg.serverUrl}/api/ai-chat/browser-result`,
-    body: { chat_id: activeChatId, command_id: commandId, result },
+    body: { key, action, result, source: 'extension' },
   })
 }
 
 function executeInPage(cmd: BrowserCommand): unknown {
-  if (cmd.type === 'snapshot') return captureSnapshot()
+  if (cmd.action === 'snapshot') return captureSnapshot()
 
   const el = cmd.selector ? (document.querySelector(cmd.selector) as HTMLElement | null) : null
 
-  if (cmd.type === 'click') {
+  if (cmd.action === 'click') {
     if (!el) return { error: `Not found: ${cmd.selector}` }
     el.click()
     return { ok: true }
   }
 
-  if (cmd.type === 'fill' && cmd.value !== undefined) {
+  if (cmd.action === 'fill' && cmd.value !== undefined) {
     if (!el) return { error: `Not found: ${cmd.selector}` }
     const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set
     setter?.call(el, cmd.value)
@@ -135,17 +135,17 @@ function executeInPage(cmd: BrowserCommand): unknown {
     return { ok: true }
   }
 
-  if (cmd.type === 'read') {
+  if (cmd.action === 'read') {
     if (!el) return { error: `Not found: ${cmd.selector}` }
     return { value: (el as HTMLInputElement).value ?? el.textContent?.trim() }
   }
 
-  if (cmd.type === 'scroll') {
+  if (cmd.action === 'scroll') {
     el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
     return { ok: true }
   }
 
-  return { error: `Unknown command: ${cmd.type}` }
+  return { error: `Unknown command: ${cmd.action}` }
 
   function captureSnapshot(): string {
     const lines: string[] = [`url: ${location.href}`, `title: ${document.title}`, '']
