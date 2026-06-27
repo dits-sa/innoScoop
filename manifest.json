@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "description": "AI browser automation bridge for Innovation Platform",
   "permissions": ["activeTab", "scripting", "storage", "tabs"],
+  "host_permissions": ["http://localhost/*", "https://*/*"],
   "background": {
     "service_worker": "src/background.ts",
     "type": "module"
