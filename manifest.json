@@ -4,13 +4,13 @@
   "version": "0.1.0",
   "description": "AI browser automation bridge for Innovation Platform",
   "permissions": ["activeTab", "scripting", "storage", "tabs"],
-  "host_permissions": ["http://localhost/*", "https://*/*"],
+  "host_permissions": ["http://*/*", "https://*/*"],
   "background": {
     "service_worker": "src/background.ts"
   },
   "content_scripts": [
     {
-      "matches": ["http://localhost/*", "https://*/*"],
+      "matches": ["http://*/*", "https://*/*"],
       "js": ["src/content.ts"],
       "run_at": "document_idle"
     }
