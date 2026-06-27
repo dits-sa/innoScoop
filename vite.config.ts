@@ -5,9 +5,6 @@ export default defineConfig({
   plugins: [
     webExtension({
       manifest: './manifest.json',
-      webExtConfig: {
-        browser: 'chrome',
-      },
     }),
   ],
   build: {
@@ -16,6 +13,8 @@ export default defineConfig({
       output: {
         format: 'iife',
         inlineDynamicImports: true,
+        // Service workers have no `window` — polyfill it before pusher-js initializes
+        intro: 'if (typeof window === "undefined") { globalThis.window = globalThis; }',
       },
     },
   },
