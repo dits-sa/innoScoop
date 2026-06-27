@@ -46,6 +46,7 @@ window.addEventListener('message', (event) => {
       type: 'INNO_INIT',
       serverUrl: event.data.serverUrl as string,
       ablyKey: event.data.ablyKey as string,
+      logoUrl: (event.data.logoUrl as string | null) ?? null,
     })
   }
 

@@ -1,6 +1,6 @@
 import Pusher from 'pusher-js'
 
-type Config = { serverUrl: string; ablyKey: string }
+type Config = { serverUrl: string; ablyKey: string; logoUrl: string | null }
 
 type BrowserCommand = {
   command_id: string
@@ -196,7 +196,7 @@ async function handleMessage(
       const tabId = sender.tab?.id
       if (tabId == null) break
       connect(
-        { serverUrl: msg.serverUrl as string, ablyKey: msg.ablyKey as string },
+        { serverUrl: msg.serverUrl as string, ablyKey: msg.ablyKey as string, logoUrl: msg.logoUrl as string | null },
         tabId,
       )
       reply({ ok: true })
@@ -213,6 +213,7 @@ async function handleMessage(
         state: pusher?.connection.state ?? 'disconnected',
         chatId: activeChatId,
         serverUrl: cfg?.serverUrl,
+        logoUrl: cfg?.logoUrl ?? null,
       })
       break
     }

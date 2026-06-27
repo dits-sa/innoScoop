@@ -1,3 +1,4 @@
+const logoEl = document.getElementById('logo') as HTMLImageElement
 const dot = document.getElementById('dot') as HTMLDivElement
 const statusText = document.getElementById('statusText') as HTMLSpanElement
 const serverUrlEl = document.getElementById('serverUrl') as HTMLSpanElement
@@ -19,12 +20,18 @@ async function refresh(): Promise<void> {
   const state: string = s?.state ?? 'disconnected'
   const chatId: number | null = s?.chatId ?? null
   const serverUrl: string = s?.serverUrl ?? ''
+  const logoUrl: string | null = s?.logoUrl ?? null
 
   const detected = !!serverUrl
   detectedEl.style.display = detected ? 'block' : 'none'
   notDetectedEl.style.display = detected ? 'none' : 'block'
 
   if (!detected) return
+
+  if (logoUrl) {
+    logoEl.src = logoUrl
+    logoEl.style.display = 'block'
+  }
 
   dot.className = `dot ${state === 'connected' ? 'connected' : state === 'connecting' ? 'connecting' : ''}`
   statusText.textContent = STATE_LABELS[state] ?? state
