@@ -6,6 +6,14 @@ const detectedEl = document.getElementById('detected') as HTMLDivElement
 const notDetectedEl = document.getElementById('notDetected') as HTMLDivElement
 const disconnectBtn = document.getElementById('disconnectBtn') as HTMLButtonElement
 
+const STATE_LABELS: Record<string, string> = {
+  connected: 'متصل',
+  connecting: 'جاري الاتصال…',
+  disconnected: 'غير متصل',
+  unavailable: 'غير متاح',
+  failed: 'فشل الاتصال',
+}
+
 async function refresh(): Promise<void> {
   const s = await chrome.runtime.sendMessage({ type: 'INNO_STATUS' })
   const state: string = s?.state ?? 'disconnected'
@@ -19,9 +27,9 @@ async function refresh(): Promise<void> {
   if (!detected) return
 
   dot.className = `dot ${state === 'connected' ? 'connected' : state === 'connecting' ? 'connecting' : ''}`
-  statusText.textContent = state.charAt(0).toUpperCase() + state.slice(1)
+  statusText.textContent = STATE_LABELS[state] ?? state
   serverUrlEl.textContent = new URL(serverUrl).hostname
-  chatIdEl.textContent = chatId ? `#${chatId}` : 'None'
+  chatIdEl.textContent = chatId ? `#${chatId}` : 'لا يوجد'
 }
 
 disconnectBtn.addEventListener('click', async () => {

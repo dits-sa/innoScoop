@@ -1,81 +1,149 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar" dir="rtl">
   <head>
     <meta charset="UTF-8" />
     <style>
+      @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap');
+
       * { box-sizing: border-box; margin: 0; padding: 0; }
-      body { width: 240px; font-family: system-ui, -apple-system, sans-serif; background: #0c2341; color: #fff; }
 
-      .header { padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; gap: 10px; }
-      .header h1 { font-size: 14px; font-weight: 600; }
-      .header p { font-size: 11px; opacity: 0.4; margin-top: 1px; }
+      body {
+        width: 260px;
+        font-family: 'IBM Plex Sans Arabic', Tahoma, system-ui, sans-serif;
+        background: #0c2341;
+        color: #fff;
+        direction: rtl;
+      }
 
+      /* ── Header ── */
+      .header {
+        padding: 14px 16px;
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .logo { width: 36px; height: 36px; flex-shrink: 0; }
+      .header-text h1 { font-size: 14px; font-weight: 600; letter-spacing: -0.1px; }
+      .header-text p  { font-size: 11px; opacity: 0.4; margin-top: 2px; }
+
+      /* ── Body ── */
       .body { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
 
       .row { display: flex; align-items: center; justify-content: space-between; }
-      .label { font-size: 10px; opacity: 0.45; text-transform: uppercase; letter-spacing: 0.5px; }
-      .value { font-size: 12px; opacity: 0.8; }
+      .lbl { font-size: 10px; opacity: 0.45; }
+      .val { font-size: 12px; font-weight: 500; }
 
+      /* ── Status dot ── */
       .status { display: flex; align-items: center; gap: 7px; }
       .dot { width: 8px; height: 8px; border-radius: 50%; background: #f87171; flex-shrink: 0; }
-      .dot.connected { background: #4ade80; }
+      .dot.connected  { background: #4ade80; }
       .dot.connecting { background: #fbbf24; animation: pulse 1s infinite; }
-      @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+      @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
+
+      /* ── Active chat badge ── */
+      .badge {
+        display: inline-block;
+        background: rgba(139,132,215,0.2);
+        color: #cfccef;
+        font-size: 11px;
+        font-weight: 500;
+        padding: 2px 8px;
+        border-radius: 20px;
+      }
 
       .divider { height: 1px; background: rgba(255,255,255,0.07); }
 
+      /* ── Not detected ── */
       .not-detected {
-        padding: 20px 16px; text-align: center;
-        font-size: 12px; opacity: 0.5; line-height: 1.6;
+        padding: 24px 16px;
+        text-align: center;
+        font-size: 12px;
+        opacity: 0.5;
+        line-height: 1.8;
       }
 
+      /* ── Button ── */
       button {
-        width: 100%; padding: 7px;
-        background: rgba(255,255,255,0.08); border: none; border-radius: 8px;
-        color: rgba(255,255,255,0.6); font-size: 11px; cursor: pointer;
+        width: 100%; padding: 8px;
+        background: rgba(255,255,255,0.07);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 10px;
+        color: rgba(255,255,255,0.55);
+        font-family: inherit;
+        font-size: 11px;
+        cursor: pointer;
         transition: background 0.15s;
       }
-      button:hover { background: rgba(255,255,255,0.13); }
+      button:hover { background: rgba(255,255,255,0.12); }
+
+      /* ── Lavender accent bar ── */
+      .accent { height: 2px; background: linear-gradient(90deg, #8b84d7, transparent); }
     </style>
   </head>
   <body>
+    <div class="accent"></div>
+
     <div class="header">
-      <div>
-        <h1>innoScoop</h1>
-        <p>AI Browser Bridge</p>
+      <!-- NCM logo (white) inlined -->
+      <svg class="logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 65.621 65.622">
+        <path d="M32.81,0A32.811,32.811,0,1,0,65.621,32.811,32.811,32.811,0,0,0,32.81,0m.037,63.723A30.913,30.913,0,1,1,63.759,32.81,30.913,30.913,0,0,1,32.846,63.723" fill="#fff"/>
+        <path d="M33.825,64.015a30.194,30.194,0,1,1,30.2-30.2,30.193,30.193,0,0,1-30.2,30.2m0-59.341A29.147,29.147,0,1,0,62.972,33.821,29.147,29.147,0,0,0,33.825,4.674" transform="translate(-1.011 -1.011)" fill="#fff"/>
+        <path d="M20.814,22.9c4.427-4.446,7.27-5.236,10.809-5.79-3.626,2.3-7.012,7.652-5.956,11.419,1.914-4,5.256-7.9,8.338-9.325a7.015,7.015,0,0,0-.121,8.087c.389-3.372,2.752-6.613,4.726-8.783,1.974,2.171,4.337,5.411,4.726,8.783a7.012,7.012,0,0,0-.121-8.087c3.082,1.423,6.424,5.329,8.339,9.325,1.056-3.767-2.331-9.118-5.956-11.419,3.54.554,6.382,1.345,10.809,5.79-1.461-5.948-6.6-8.008-10.716-8.743,4.525-.387,5.423.072,9.419,1.726-4.34-4.265-7.381-5.034-11.727-4.618a5.755,5.755,0,0,1,2.553-1.29c-1.824-.718-4.675-.34-5.785.721a4.056,4.056,0,0,0-1.526-2.741V7.936l-.014.009L38.6,7.936v.019A4.056,4.056,0,0,0,37.07,10.7c-1.109-1.062-3.961-1.439-5.785-.721a5.748,5.748,0,0,1,2.552,1.29c-4.346-.415-7.387.353-11.727,4.618,4-1.654,4.894-2.114,9.419-1.726-4.112.736-9.255,2.8-10.716,8.743" transform="translate(-5.799 -2.211)" fill="#fff"/>
+        <path d="M58.133,64.29a74.966,74.966,0,0,0-20.61,5.01,74.966,74.966,0,0,0-20.61-5.01,53.6,53.6,0,0,1,17.5,6.356,58.2,58.2,0,0,0-6.128,3.276s1.422,2.408,3.159,3.01a53.666,53.666,0,0,1,6.08-4.425,53.582,53.582,0,0,1,6.08,4.425c1.737-.6,3.159-3.01,3.159-3.01a58.132,58.132,0,0,0-6.128-3.276,53.6,53.6,0,0,1,17.5-6.356" transform="translate(-4.713 -17.914)" fill="#fff"/>
+        <path d="M28.933,61.653a72.327,72.327,0,0,1,11.826,3.289,71.287,71.287,0,0,1,11.816-3.3c-.287-.745-.823-2.033-3.7-2.033a7.234,7.234,0,0,0-2.8.763,3.628,3.628,0,0,1,3.628-2.219,5.149,5.149,0,0,0-5.474-4.508,5.987,5.987,0,0,0-4.547,2.187,3.344,3.344,0,0,1,.768,1.891,5.57,5.57,0,0,0-3.355-1.6,3.479,3.479,0,0,0-3.567,2.612c1.337,0,2.062,1.685,2.062,1.685a6.6,6.6,0,0,0-3.156-.87c-2.093.081-3.087,1-3.5,2.1" transform="translate(-8.062 -14.947)" fill="#fff"/>
+        <path d="M37.77,50.807a4.318,4.318,0,0,1,2.935-.09A7.26,7.26,0,0,1,46.6,48.008a7.642,7.642,0,0,1,2.494.4,6.93,6.93,0,1,0-11.32,2.4" transform="translate(-9.95 -10.853)" fill="#fff"/>
+        <path d="M45.852,33.631l-.384-8.4a.3.3,0,0,0-.6,0L44.486,33.6c.144-.007.287-.022.434-.022a8.271,8.271,0,0,1,.932.056" transform="translate(-12.396 -6.949)" fill="#fff"/>
+        <path d="M61.215,47.485,56.7,47.106a8.3,8.3,0,0,1,.045.861c0,.167-.014.33-.024.494l4.5-.377a.3.3,0,0,0,0-.6" transform="translate(-15.799 -13.126)" fill="#fff"/>
+        <path d="M32.161,47.1l-4.593.384a.3.3,0,0,0,0,.6l4.572.383c-.01-.167-.025-.332-.025-.5a8.2,8.2,0,0,1,.046-.867" transform="translate(-7.601 -13.124)" fill="#fff"/>
+        <path d="M36.548,38.294l-3.6-3.048a.3.3,0,0,0-.424.424l3.04,3.6a8.231,8.231,0,0,1,.988-.973" transform="translate(-9.038 -9.798)" fill="#fff"/>
+        <path d="M53.539,39.225l3.005-3.554a.3.3,0,0,0-.424-.424l-3.57,3.018a8.291,8.291,0,0,1,.989.96" transform="translate(-14.643 -9.798)" fill="#fff"/>
+        <path d="M57.7,42.887a.3.3,0,0,0-.227-.555l-2.057.433a8.161,8.161,0,0,1,.519,1.208Z" transform="translate(-15.442 -11.79)" fill="#fff"/>
+        <path d="M31.707,52.723a.3.3,0,0,0,.227.555l2.174-.55a8.142,8.142,0,0,1-.47-1.216Z" transform="translate(-8.785 -14.354)" fill="#fff"/>
+        <path d="M55.94,52.267l1.835.967c.361.135.392-.2.043-.364l-1.69-1.1c-.053.167-.188.5-.188.5" transform="translate(-15.587 -14.425)" fill="#fff"/>
+        <path d="M31.98,42.229a.3.3,0,0,0-.232.553l2,1.192a8.2,8.2,0,0,1,.522-1.221Z" transform="translate(-8.798 -11.761)" fill="#fff"/>
+        <path d="M40,34.743a.3.3,0,0,0-.558.222l.536,2.2a8.185,8.185,0,0,1,1.2-.5Z" transform="translate(-10.985 -9.631)" fill="#fff"/>
+        <path d="M51.048,34.966a.3.3,0,0,0-.558-.222l-1.239,2.013a8.141,8.141,0,0,1,1.223.557Z" transform="translate(-13.724 -9.631)" fill="#fff"/>
+      </svg>
+      <div class="header-text">
+        <h1>مساعد الابتكار</h1>
+        <p>innoScoop • مساعد المتصفح</p>
       </div>
     </div>
 
+    <!-- Detected: on the platform -->
     <div id="detected">
       <div class="body">
         <div class="row">
-          <span class="label">Status</span>
+          <span class="lbl">الحالة</span>
           <div class="status">
+            <span id="statusText">جاري الاتصال…</span>
             <div class="dot" id="dot"></div>
-            <span id="statusText">Connecting…</span>
           </div>
         </div>
 
         <div class="divider"></div>
 
         <div class="row">
-          <span class="label">Platform</span>
-          <span class="value" id="serverUrl">—</span>
+          <span class="lbl">المنصة</span>
+          <span class="val" id="serverUrl">—</span>
         </div>
+
         <div class="row">
-          <span class="label">Active Chat</span>
-          <span class="value" id="chatId">None</span>
+          <span class="lbl">المحادثة النشطة</span>
+          <span class="badge" id="chatId">لا يوجد</span>
         </div>
 
         <div class="divider"></div>
 
-        <button id="disconnectBtn">Reset Connection</button>
+        <button id="disconnectBtn">إعادة تعيين الاتصال</button>
       </div>
     </div>
 
+    <!-- Not detected: on another site -->
     <div id="notDetected" style="display:none">
       <div class="not-detected">
-        Open the Innovation Platform<br />to activate innoScoop.
+        افتح منصة الابتكار<br />لتفعيل مساعد المتصفح
       </div>
     </div>
 
