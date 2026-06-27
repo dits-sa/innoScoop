@@ -1,6 +1,12 @@
 import Pusher from 'pusher-js'
 
-type Config = { serverUrl: string; ablyKey: string; logoUrl: string | null }
+type Config = {
+  serverUrl: string
+  ablyKey: string
+  logoUrl: string | null
+  primaryColor: string | null
+  fontFamily: string | null
+}
 
 type BrowserCommand = {
   command_id: string
@@ -196,7 +202,13 @@ async function handleMessage(
       const tabId = sender.tab?.id
       if (tabId == null) break
       connect(
-        { serverUrl: msg.serverUrl as string, ablyKey: msg.ablyKey as string, logoUrl: msg.logoUrl as string | null },
+        {
+          serverUrl: msg.serverUrl as string,
+          ablyKey: msg.ablyKey as string,
+          logoUrl: msg.logoUrl as string | null,
+          primaryColor: msg.primaryColor as string | null,
+          fontFamily: msg.fontFamily as string | null,
+        },
         tabId,
       )
       reply({ ok: true })
@@ -214,6 +226,8 @@ async function handleMessage(
         chatId: activeChatId,
         serverUrl: cfg?.serverUrl,
         logoUrl: cfg?.logoUrl ?? null,
+        primaryColor: cfg?.primaryColor ?? null,
+        fontFamily: cfg?.fontFamily ?? null,
       })
       break
     }

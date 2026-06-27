@@ -5,12 +5,17 @@
     <style>
       @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap');
 
+      :root {
+        --theme-primary: #0c2341;
+        --theme-font: 'IBM Plex Sans Arabic', Tahoma, system-ui, sans-serif;
+      }
+
       * { box-sizing: border-box; margin: 0; padding: 0; }
 
       body {
         width: 260px;
-        font-family: 'IBM Plex Sans Arabic', Tahoma, system-ui, sans-serif;
-        background: #0c2341;
+        font-family: var(--theme-font);
+        background: var(--theme-primary);
         color: #fff;
         direction: rtl;
       }
